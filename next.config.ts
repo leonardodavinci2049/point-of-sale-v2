@@ -11,7 +11,25 @@ const nextConfig: NextConfig = {
 
   // Experimental features do React 19 e Next.js 15
   experimental: {
-    // reactCompiler: true, // React Compiler - remover por enquanto
+    // reactCompiler: true, // React Compiler - disponível em versões canary
+  },
+
+  // Configuração do Turbopack (substitui configurações webpack)
+  turbopack: {
+    // Resolver aliases (similar ao webpack resolve.alias)
+    resolveAlias: {
+      // Manter compatibilidade com paths do TypeScript
+    },
+    // Resolver extensões customizadas
+    resolveExtensions: [
+      ".tsx",
+      ".ts",
+      ".jsx",
+      ".js",
+      ".mjs",
+      ".json",
+      ".css",
+    ],
   },
 
   // Otimização de imagens
@@ -49,35 +67,6 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
     ],
-  },
-
-  // Bundle analyzer para otimização
-  webpack: (config, { isServer, dev }) => {
-    // Otimizações para client-side
-    if (!isServer) {
-      config.resolve.fallback = {
-        fs: false,
-        net: false,
-        tls: false,
-        crypto: false,
-      };
-    }
-
-    // Otimizações em produção
-    if (!dev) {
-      config.optimization.splitChunks = {
-        chunks: "all",
-        cacheGroups: {
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: "vendors",
-            chunks: "all",
-          },
-        },
-      };
-    }
-
-    return config;
   },
 
   // Headers de segurança
