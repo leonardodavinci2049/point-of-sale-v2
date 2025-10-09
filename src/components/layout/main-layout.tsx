@@ -17,8 +17,11 @@ import { Button } from "@/components/ui/button";
 import type { Customer } from "@/data/mock-customers";
 import type { Product } from "@/data/mock-products";
 import { useKeyboardShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
-import { useComputedValues } from "@/lib/stores/hydrated-store";
-import { usePDVModals, usePDVStore } from "@/lib/stores/pdv-store";
+import {
+  useComputedValues,
+  useHydratedPDVStore,
+  useModalsState,
+} from "@/lib/stores/hydrated-store";
 import { type Budget, generateBudgetId } from "@/lib/types/budget";
 import { BudgetStorage } from "@/lib/utils/budget-storage";
 
@@ -35,7 +38,7 @@ export default function MainLayout({
   void initialProducts;
   void initialCustomers;
 
-  // ✅ Zustand: Estado centralizado (substitui 15+ useState!)
+  // ✅ Zustand SSR-safe: Estado centralizado hidratado
   const {
     isSidebarOpen,
     isMobile,
@@ -51,13 +54,13 @@ export default function MainLayout({
     setCustomer,
     setDiscount,
     finalizeSale,
-  } = usePDVStore();
+  } = useHydratedPDVStore();
 
   // ✅ Valores computados SSR-safe
   const { subtotal, discountAmount, total } = useComputedValues();
 
-  // ✅ Estado dos modais centralizado
-  const { modals, openModal, closeModal } = usePDVModals();
+  // ✅ Estado dos modais SSR-safe
+  const { modals, openModal, closeModal } = useModalsState();
 
   // ✅ Hook para detectar tamanho da tela (otimizado)
   useEffect(() => {
