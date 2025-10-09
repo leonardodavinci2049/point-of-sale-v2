@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -311,40 +312,88 @@ export const usePDVStore = create<PDVStore>()(
   ),
 );
 
+// Seletores estáveis para evitar re-renders
+const selectComputedValues = (state: PDVStore) => {
+  const subtotal = state.getSubtotal();
+  const discountAmount = state.getDiscountAmount();
+  const total = state.getTotal();
+  return { subtotal, discountAmount, total };
+};
+
+// Seletores individuais para valores computados (mais estáveis)
+const selectSubtotal = (state: PDVStore) => state.getSubtotal();
+const selectDiscountAmount = (state: PDVStore) => state.getDiscountAmount();
+const selectTotal = (state: PDVStore) => state.getTotal();
+
+const selectCartState = (state: PDVStore) => ({
+  cartItems: state.cartItems,
+  addItem: state.addItem,
+  updateQuantity: state.updateQuantity,
+  removeItem: state.removeItem,
+  clearCart: state.clearCart,
+});
+
+const selectModalsState = (state: PDVStore) => ({
+  modals: state.modals,
+  openModal: state.openModal,
+  closeModal: state.closeModal,
+  closeAllModals: state.closeAllModals,
+});
+
+const selectCustomerState = (state: PDVStore) => ({
+  selectedCustomer: state.selectedCustomer,
+  setCustomer: state.setCustomer,
+});
+
 // Hook para usar apenas os valores computados (otimização)
 export const usePDVComputedValues = () => {
-  return usePDVStore((state) => ({
-    subtotal: state.getSubtotal(),
-    discountAmount: state.getDiscountAmount(),
-    total: state.getTotal(),
-  }));
+  return usePDVStore(selectComputedValues);
 };
+
+// Hooks individuais para valores computados (mais estáveis para SSR)
+export const usePDVSubtotal = () => usePDVStore(selectSubtotal);
+export const usePDVDiscountAmount = () => usePDVStore(selectDiscountAmount);
+export const usePDVTotal = () => usePDVStore(selectTotal);
 
 // Hook para usar apenas o estado do carrinho
 export const usePDVCart = () => {
-  return usePDVStore((state) => ({
-    cartItems: state.cartItems,
-    addItem: state.addItem,
-    updateQuantity: state.updateQuantity,
-    removeItem: state.removeItem,
-    clearCart: state.clearCart,
-  }));
+  return usePDVStore(selectCartState);
 };
 
 // Hook para usar apenas o estado dos modais
 export const usePDVModals = () => {
-  return usePDVStore((state) => ({
-    modals: state.modals,
-    openModal: state.openModal,
-    closeModal: state.closeModal,
-    closeAllModals: state.closeAllModals,
-  }));
+  return usePDVStore(selectModalsState);
 };
 
 // Hook para usar apenas o estado do cliente
 export const usePDVCustomer = () => {
-  return usePDVStore((state) => ({
-    selectedCustomer: state.selectedCustomer,
-    setCustomer: state.setCustomer,
-  }));
+  return usePDVStore(selectCustomerState);
+};
+
+// Hook SSR-safe para evitar hydration mismatch
+export const useHydratedPDVStore = () => {
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  const store = usePDVStore();
+
+  return hydrated
+    ? store
+    : {
+        ...store,
+        cartItems: [],
+        selectedCustomer: null,
+        discount: { type: null, value: 0 },
+        modals: {
+          searchCustomer: false,
+          addCustomer: false,
+          searchProduct: false,
+          discount: false,
+          budgets: false,
+          pendingSales: false,
+        },
+      };
 };

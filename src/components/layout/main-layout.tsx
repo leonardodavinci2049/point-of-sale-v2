@@ -17,11 +17,8 @@ import { Button } from "@/components/ui/button";
 import type { Customer } from "@/data/mock-customers";
 import type { Product } from "@/data/mock-products";
 import { useKeyboardShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
-import {
-  usePDVComputedValues,
-  usePDVModals,
-  usePDVStore,
-} from "@/lib/stores/pdv-store";
+import { useComputedValues } from "@/lib/stores/hydrated-store";
+import { usePDVModals, usePDVStore } from "@/lib/stores/pdv-store";
 import { type Budget, generateBudgetId } from "@/lib/types/budget";
 import { BudgetStorage } from "@/lib/utils/budget-storage";
 
@@ -56,8 +53,8 @@ export default function MainLayout({
     finalizeSale,
   } = usePDVStore();
 
-  // ✅ Valores computados otimizados com Zustand
-  const { subtotal, discountAmount, total } = usePDVComputedValues();
+  // ✅ Valores computados SSR-safe
+  const { subtotal, discountAmount, total } = useComputedValues();
 
   // ✅ Estado dos modais centralizado
   const { modals, openModal, closeModal } = usePDVModals();
