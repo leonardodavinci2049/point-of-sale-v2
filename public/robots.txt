@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /
+
+# PDV System não deve ser indexado por mecanismos de busca
+# Este é um sistema interno de ponto de venda
+
+Sitemap: https://localhost:3000/sitemap.xml

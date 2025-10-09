@@ -22,7 +22,18 @@ import { type Budget, generateBudgetId } from "@/lib/types/budget";
 import type { OrderItem } from "@/lib/types/order";
 import { BudgetStorage } from "@/lib/utils/budget-storage";
 
-export default function MainLayout() {
+interface MainLayoutProps {
+  initialProducts?: Product[];
+  initialCustomers?: Customer[];
+}
+
+export default function MainLayout({
+  initialProducts = [], // TODO: Usar quando implementar camada de serviço
+  initialCustomers = [], // TODO: Usar quando implementar camada de serviço
+}: MainLayoutProps) {
+  // Evitar warnings do TypeScript por props não usadas
+  void initialProducts;
+  void initialCustomers;
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
