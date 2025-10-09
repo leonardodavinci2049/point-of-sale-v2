@@ -155,7 +155,7 @@ export default function MainLayout({
 
         <main className="flex flex-1 overflow-hidden">
           {/* Left Panel - Customer and Cart */}
-          <div className="flex w-full flex-col lg:w-2/3">
+          <div className="flex flex-1 flex-col lg:flex-none lg:w-2/3">
             {/* Customer Panel */}
             <div className="border-b p-4">
               <CustomerPanel
@@ -177,7 +177,7 @@ export default function MainLayout({
           </div>
 
           {/* Right Panel - Totals and Payment */}
-          <div className="hidden w-1/3 flex-col border-l bg-white dark:bg-gray-800 lg:flex">
+          <div className="hidden lg:flex lg:w-1/3 flex-col border-l bg-white dark:bg-gray-800">
             {/* Totals Panel */}
             <div className="flex-1 p-4">
               <TotalsPanel
