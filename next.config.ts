@@ -21,15 +21,7 @@ const nextConfig: NextConfig = {
       // Manter compatibilidade com paths do TypeScript
     },
     // Resolver extensões customizadas
-    resolveExtensions: [
-      ".tsx",
-      ".ts",
-      ".jsx",
-      ".js",
-      ".mjs",
-      ".json",
-      ".css",
-    ],
+    resolveExtensions: [".tsx", ".ts", ".jsx", ".js", ".mjs", ".json", ".css"],
   },
 
   // Otimização de imagens

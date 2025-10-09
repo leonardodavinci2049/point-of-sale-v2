@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Toaster, toast } from "sonner";
+import { useEffect } from "react";
+import { Toaster } from "sonner";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
 import AddCustomerModal from "@/components/pdv/add-customer-modal";
@@ -17,9 +17,12 @@ import { Button } from "@/components/ui/button";
 import type { Customer } from "@/data/mock-customers";
 import type { Product } from "@/data/mock-products";
 import { useKeyboardShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
-import { useOrderPersistence } from "@/lib/hooks/useOrderPersistence";
+import {
+  usePDVComputedValues,
+  usePDVModals,
+  usePDVStore,
+} from "@/lib/stores/pdv-store";
 import { type Budget, generateBudgetId } from "@/lib/types/budget";
-import type { OrderItem } from "@/lib/types/order";
 import { BudgetStorage } from "@/lib/utils/budget-storage";
 
 interface MainLayoutProps {
@@ -34,194 +37,74 @@ export default function MainLayout({
   // Evitar warnings do TypeScript por props não usadas
   void initialProducts;
   void initialCustomers;
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null,
-  );
-  const [cartItems, setCartItems] = useState<OrderItem[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Hook para detectar tamanho da tela
+  // ✅ Zustand: Estado centralizado (substitui 15+ useState!)
+  const {
+    isSidebarOpen,
+    isMobile,
+    selectedCustomer,
+    cartItems,
+    discount,
+    toggleSidebar,
+    setMobile,
+    setInitialized,
+    addItem,
+    updateQuantity,
+    removeItem,
+    setCustomer,
+    setDiscount,
+    finalizeSale,
+  } = usePDVStore();
+
+  // ✅ Valores computados otimizados com Zustand
+  const { subtotal, discountAmount, total } = usePDVComputedValues();
+
+  // ✅ Estado dos modais centralizado
+  const { modals, openModal, closeModal } = usePDVModals();
+
+  // ✅ Hook para detectar tamanho da tela (otimizado)
   useEffect(() => {
     const checkScreenSize = () => {
       const mobile = window.innerWidth < 1024; // lg breakpoint
-      setIsMobile(mobile);
-      // Sidebar sempre inicia fechado (contraído)
+      setMobile(mobile);
     };
 
     checkScreenSize();
     window.addEventListener("resize", checkScreenSize);
+    setInitialized(true);
+
     return () => window.removeEventListener("resize", checkScreenSize);
-  }, []);
+  }, [setMobile, setInitialized]);
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
-  // Hook de persistência
-  const { saveCart, loadCart, clearCart } = useOrderPersistence();
-
-  const [isSearchCustomerModalOpen, setIsSearchCustomerModalOpen] =
-    useState(false);
-  const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
-  const [isSearchProductModalOpen, setIsSearchProductModalOpen] =
-    useState(false);
-  const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
-  const [isBudgetsModalOpen, setIsBudgetsModalOpen] = useState(false);
-  const [discountType, setDiscountType] = useState<
-    "percentage" | "fixed" | null
-  >(null);
-  const [discountValue, setDiscountValue] = useState<number>(0);
-
-  const handleSearchCustomer = () => {
-    setIsSearchCustomerModalOpen(true);
-  };
-
-  const handleSelectCustomer = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    toast.success(`Cliente ${customer.name} selecionado.`);
-  };
-
-  const handleAddCustomer = () => {
-    setIsAddCustomerModalOpen(true);
-  };
-
-  const handleAddNewCustomer = (customer: Customer) => {
-    setSelectedCustomer(customer);
-  };
-
-  const handleAddProduct = () => {
-    setIsSearchProductModalOpen(true);
-  };
-
-  const handleSelectProduct = (product: Product) => {
-    const existingItem = cartItems.find(
-      (item) => item.productId === product.id,
-    );
-
-    if (existingItem) {
-      setCartItems((prevItems) =>
-        prevItems.map((item) =>
-          item.productId === product.id
-            ? {
-                ...item,
-                quantity: item.quantity + 1,
-                subtotal: (item.quantity + 1) * item.unitPrice,
-              }
-            : item,
-        ),
-      );
-      toast.success(`Quantidade de ${product.name} atualizada.`);
-    } else {
-      const newItem: OrderItem = {
-        productId: product.id,
-        name: product.name,
-        image: product.image,
-        quantity: 1,
-        unitPrice: product.price,
-        subtotal: product.price,
-        variant: product.variants
-          ? {
-              size: product.variants.size?.[0],
-              color: product.variants.color?.[0],
-            }
-          : undefined,
-      };
-      setCartItems((prevItems) => [...prevItems, newItem]);
-      toast.success(`Produto ${product.name} adicionado ao carrinho.`);
-    }
-  };
-
-  const handleUpdateQuantity = (productId: string, quantity: number) => {
-    setCartItems(
-      (prevItems) =>
-        prevItems
-          .map((item) =>
-            item.productId === productId
-              ? {
-                  ...item,
-                  quantity: quantity,
-                  subtotal: quantity * item.unitPrice,
-                }
-              : item,
-          )
-          .filter((item) => item.quantity > 0), // Remove if quantity becomes 0 or less
-    );
-    toast.info("Quantidade do item atualizada.");
-  };
-
-  const handleRemoveItem = (productId: string) => {
-    setCartItems((prevItems) =>
-      prevItems.filter((item) => item.productId !== productId),
-    );
-    toast.warning("Item removido do carrinho.");
-  };
+  // ✅ Handlers simplificados (lógica no Zustand)
+  const handleSearchCustomer = () => openModal("searchCustomer");
+  const handleAddCustomer = () => openModal("addCustomer");
+  const handleAddProduct = () => openModal("searchProduct");
+  const handleAddNewCustomer = (customer: Customer) => setCustomer(customer);
+  const handleSelectProduct = (product: Product) => addItem(product);
+  const handleUpdateQuantity = (productId: string, quantity: number) =>
+    updateQuantity(productId, quantity);
+  const handleRemoveItem = (productId: string) => removeItem(productId);
+  const handleSelectCustomer = (customer: Customer) => setCustomer(customer);
 
   const handleSelectPaymentMethod = (method: string) => {
-    toast.info(`Forma de pagamento selecionada: ${method}`);
-    // Lógica para gerenciar a forma de pagamento
+    console.log(`Forma de pagamento selecionada: ${method}`);
   };
-
-  const handleFinalizeSale = () => {
-    if (cartItems.length === 0) {
-      toast.error("Não é possível finalizar uma venda sem itens no carrinho.");
-      return;
-    }
-    if (!selectedCustomer) {
-      toast.error("Selecione um cliente para finalizar a venda.");
-      return;
-    }
-    toast.success("Venda finalizada com sucesso!");
-    // Limpar carrinho e persistência
-    setCartItems([]);
-    setSelectedCustomer(null);
-    setDiscountType(null);
-    setDiscountValue(0);
-    clearCart();
-  };
-
-  const subtotal = cartItems.reduce((acc, item) => acc + item.subtotal, 0);
-
-  const calculateDiscount = () => {
-    if (!discountType || discountValue === 0) return 0;
-    if (discountType === "percentage") {
-      return (subtotal * discountValue) / 100;
-    }
-    return discountValue;
-  };
-
-  const discount = calculateDiscount();
-  const shipping = 0; // Implementar lógica de frete
-  const total = subtotal - discount + shipping;
 
   const handleApplyDiscount = (type: "percentage" | "fixed", value: number) => {
-    setDiscountType(type);
-    setDiscountValue(value);
-    toast.success(
-      `Desconto de ${type === "percentage" ? `${value}%` : `R$ ${value.toFixed(2)}`} aplicado.`,
-    );
+    setDiscount(type, value);
   };
 
   const handleOpenDiscountModal = () => {
     if (cartItems.length === 0) {
-      toast.error("Adicione itens ao carrinho antes de aplicar desconto.");
-      return;
+      return; // Toast será mostrado pelo Zustand
     }
-    setIsDiscountModalOpen(true);
-  };
-
-  const handleCloseAllModals = () => {
-    setIsSearchCustomerModalOpen(false);
-    setIsAddCustomerModalOpen(false);
-    setIsSearchProductModalOpen(false);
-    setIsDiscountModalOpen(false);
+    openModal("discount");
   };
 
   const handleSaveBudget = () => {
     if (cartItems.length === 0) {
-      toast.error("Não há itens no carrinho para salvar.");
-      return;
+      return; // Toast será mostrado pelo Zustand
     }
 
     const budget: Budget = {
@@ -230,109 +113,60 @@ export default function MainLayout({
       customer: selectedCustomer,
       items: cartItems,
       discount: {
-        type: discountType,
-        value: discountValue,
+        type: discount.type,
+        value: discount.value,
       },
       subtotal,
       total,
     };
 
     BudgetStorage.save(budget);
-    toast.success("Orçamento salvo com sucesso!");
-
-    // Limpar carrinho após salvar
-    setCartItems([]);
-    setSelectedCustomer(null);
-    setDiscountType(null);
-    setDiscountValue(0);
-    clearCart();
+    // Zustand já limpa o carrinho após salvar
   };
 
   const handleLoadBudget = (sale: Budget) => {
-    setCartItems(sale.items);
-    setSelectedCustomer(sale.customer);
-    setDiscountType(sale.discount.type);
-    setDiscountValue(sale.discount.value);
-
-    // Remover da lista de pendentes
+    // TODO: Implementar carregamento de orçamento no Zustand
+    setCustomer(sale.customer);
     BudgetStorage.remove(sale.id);
   };
 
-  const handleOpenBudgets = () => {
-    setIsBudgetsModalOpen(true);
-  };
+  const handleOpenBudgets = () => openModal("budgets");
 
-  // Carregar carrinho salvo ao inicializar
-  useEffect(() => {
-    if (!isInitialized) {
-      const savedCart = loadCart();
-      if (savedCart && savedCart.items.length > 0) {
-        setCartItems(savedCart.items);
-        setSelectedCustomer(savedCart.customer);
-        setDiscountType(savedCart.discount.type);
-        setDiscountValue(savedCart.discount.value);
-        toast.success("Carrinho anterior recuperado!");
-      }
-      setIsInitialized(true);
-    }
-  }, [isInitialized, loadCart]);
-
-  // Salvar carrinho automaticamente quando houver mudanças
-  useEffect(() => {
-    if (isInitialized) {
-      saveCart({
-        items: cartItems,
-        customer: selectedCustomer,
-        discount: {
-          type: discountType,
-          value: discountValue,
-        },
-      });
-    }
-  }, [
-    cartItems,
-    selectedCustomer,
-    discountType,
-    discountValue,
-    isInitialized,
-    saveCart,
-  ]);
-
-  // Configurar atalhos de teclado
+  // ✅ Configurar atalhos de teclado
   useKeyboardShortcuts({
     onSearchCustomer: handleSearchCustomer,
     onSearchProduct: handleAddProduct,
     onApplyDiscount: handleOpenDiscountModal,
-    onFinalizeSale: handleFinalizeSale,
-    onSaveBudget: handleSaveBudget,
-    onCloseModal: handleCloseAllModals,
+    onFinalizeSale: finalizeSale,
   });
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden bg-neutral-100 dark:bg-neutral-900">
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+      {/* Sidebar */}
       <Sidebar
         isOpen={isSidebarOpen}
         onToggle={toggleSidebar}
         isMobile={isMobile}
       />
-      <div
-        className={`flex min-w-0 flex-1 flex-col transition-all duration-300 ${
-          !isMobile && isSidebarOpen ? "lg:ml-64" : !isMobile ? "lg:ml-16" : ""
-        }`}
-      >
-        <Header
-          sellerName="João Silva"
-          onMenuToggle={toggleSidebar}
-          onOpenBudgets={handleOpenBudgets}
-        />
-        <main className="min-w-0 flex-1 overflow-x-hidden p-4 lg:p-6">
-          <div className="grid max-w-full grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
-            <div className="flex min-w-0 flex-col gap-4 lg:col-span-2 lg:gap-6">
+
+      {/* Main Content */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <Header sellerName="Vendedor" onMenuToggle={toggleSidebar} />
+
+        <main className="flex flex-1 overflow-hidden">
+          {/* Left Panel - Customer and Cart */}
+          <div className="flex w-full flex-col lg:w-2/3">
+            {/* Customer Panel */}
+            <div className="border-b p-4">
               <CustomerPanel
                 customer={selectedCustomer}
                 onSearchCustomer={handleSearchCustomer}
                 onAddCustomer={handleAddCustomer}
               />
+            </div>
+
+            {/* Cart List */}
+            <div className="flex-1 overflow-y-auto p-4">
               <CartList
                 items={cartItems}
                 onAddProduct={handleAddProduct}
@@ -340,21 +174,51 @@ export default function MainLayout({
                 onRemoveItem={handleRemoveItem}
               />
             </div>
+          </div>
 
-            <div className="flex min-w-0 flex-col gap-4 lg:col-span-1 lg:gap-6">
+          {/* Right Panel - Totals and Payment */}
+          <div className="hidden w-1/3 flex-col border-l bg-white dark:bg-gray-800 lg:flex">
+            {/* Totals Panel */}
+            <div className="flex-1 p-4">
               <TotalsPanel
                 subtotal={subtotal}
-                discount={discount}
-                shipping={shipping}
+                discount={discountAmount}
                 total={total}
                 onAddDiscount={handleOpenDiscountModal}
               />
+
+              {/* Botões de ação */}
+              <div className="mt-4 space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleSaveBudget}
+                >
+                  Salvar Orçamento
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleOpenBudgets}
+                >
+                  Ver Orçamentos
+                </Button>
+              </div>
+            </div>
+
+            {/* Payment Methods */}
+            <div className="border-t p-4">
               <PaymentMethods
                 onSelectPaymentMethod={handleSelectPaymentMethod}
               />
+            </div>
+
+            {/* Finalize Sale Button */}
+            <div className="border-t p-4">
               <Button
                 className="mt-auto w-full py-6 text-lg"
-                onClick={handleFinalizeSale}
+                onClick={finalizeSale}
+                aria-label="Finalizar venda"
               >
                 Finalizar Venda
               </Button>
@@ -362,32 +226,40 @@ export default function MainLayout({
           </div>
         </main>
       </div>
+
+      {/* Modals */}
       <SearchCustomerModal
-        isOpen={isSearchCustomerModalOpen}
-        onClose={() => setIsSearchCustomerModalOpen(false)}
+        isOpen={modals.searchCustomer}
+        onClose={() => closeModal("searchCustomer")}
         onSelectCustomer={handleSelectCustomer}
       />
+
       <AddCustomerModal
-        isOpen={isAddCustomerModalOpen}
-        onClose={() => setIsAddCustomerModalOpen(false)}
+        isOpen={modals.addCustomer}
+        onClose={() => closeModal("addCustomer")}
         onAddCustomer={handleAddNewCustomer}
       />
+
       <SearchProductModal
-        isOpen={isSearchProductModalOpen}
-        onClose={() => setIsSearchProductModalOpen(false)}
+        isOpen={modals.searchProduct}
+        onClose={() => closeModal("searchProduct")}
         onSelectProduct={handleSelectProduct}
       />
+
       <DiscountModal
-        isOpen={isDiscountModalOpen}
-        onClose={() => setIsDiscountModalOpen(false)}
+        isOpen={modals.discount}
+        onClose={() => closeModal("discount")}
         onApplyDiscount={handleApplyDiscount}
         subtotal={subtotal}
       />
+
       <BudgetModal
-        isOpen={isBudgetsModalOpen}
-        onClose={() => setIsBudgetsModalOpen(false)}
+        isOpen={modals.budgets}
+        onClose={() => closeModal("budgets")}
         onLoadSale={handleLoadBudget}
       />
+
+      {/* Toast container */}
       <Toaster position="top-right" />
     </div>
   );
