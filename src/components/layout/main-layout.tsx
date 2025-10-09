@@ -150,13 +150,9 @@ export default function MainLayout({
       />
 
       {/* Main Content */}
-      <div 
+      <div
         className={`flex flex-1 flex-col overflow-hidden transition-all duration-300 ease-in-out ${
-          isMobile 
-            ? 'ml-0' 
-            : isSidebarOpen 
-              ? 'ml-64' 
-              : 'ml-16'
+          isMobile ? "ml-0" : isSidebarOpen ? "ml-64" : "ml-16"
         }`}
       >
         <Header sellerName="Vendedor" onMenuToggle={toggleSidebar} />
