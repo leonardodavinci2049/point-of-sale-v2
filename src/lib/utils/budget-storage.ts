@@ -1,15 +1,20 @@
 import type { Budget } from "../types/budget";
 import { ensureOrderItemsHaveImages } from "./product-utils";
-import { LocalStorageManager, STORAGE_KEYS } from "./storage";
+import {
+  getLocalStorage,
+  removeLocalStorage,
+  STORAGE_KEYS,
+  setLocalStorage,
+} from "./storage";
 
 /**
  * Retorna todos os orçamentos
  */
 export function getAllBudgets(): Budget[] {
-  const budgets = LocalStorageManager.get<Budget[]>(STORAGE_KEYS.BUDGETS, []);
+  const budgets = getLocalStorage<Budget[]>(STORAGE_KEYS.BUDGETS, []);
 
   // Garante que todos os items dos orçamentos tenham imagem (compatibilidade com dados antigos)
-  return budgets.map((budget) => ({
+  return budgets.map((budget: Budget) => ({
     ...budget,
     items: ensureOrderItemsHaveImages(budget.items),
   }));
@@ -28,7 +33,7 @@ export function saveBudget(budget: Budget): void {
     budgets.push(budget);
   }
 
-  LocalStorageManager.set(STORAGE_KEYS.BUDGETS, budgets);
+  setLocalStorage(STORAGE_KEYS.BUDGETS, budgets);
 }
 
 /**
@@ -45,14 +50,14 @@ export function getBudgetById(id: string): Budget | null {
 export function removeBudget(id: string): void {
   const budgets = getAllBudgets();
   const filtered = budgets.filter((b) => b.id !== id);
-  LocalStorageManager.set(STORAGE_KEYS.BUDGETS, filtered);
+  setLocalStorage(STORAGE_KEYS.BUDGETS, filtered);
 }
 
 /**
  * Remove todos os orçamentos
  */
 export function clearBudgets(): void {
-  LocalStorageManager.remove(STORAGE_KEYS.BUDGETS);
+  removeLocalStorage(STORAGE_KEYS.BUDGETS);
 }
 
 /**

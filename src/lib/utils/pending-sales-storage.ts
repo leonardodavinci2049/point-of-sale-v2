@@ -1,18 +1,20 @@
 import type { PendingSale } from "../types/pending-sale";
 import { ensureOrderItemsHaveImages } from "./product-utils";
-import { LocalStorageManager, STORAGE_KEYS } from "./storage";
+import {
+  getLocalStorage,
+  removeLocalStorage,
+  STORAGE_KEYS,
+  setLocalStorage,
+} from "./storage";
 
 /**
  * Retorna todas as vendas pendentes
  */
 export function getAllPendingSales(): PendingSale[] {
-  const sales = LocalStorageManager.get<PendingSale[]>(
-    STORAGE_KEYS.PENDING_SALES,
-    [],
-  );
+  const sales = getLocalStorage<PendingSale[]>(STORAGE_KEYS.PENDING_SALES, []);
 
   // Garante que todos os items das vendas pendentes tenham imagem (compatibilidade com dados antigos)
-  return sales.map((sale) => ({
+  return sales.map((sale: PendingSale) => ({
     ...sale,
     items: ensureOrderItemsHaveImages(sale.items),
   }));
@@ -31,7 +33,7 @@ export function savePendingSale(sale: PendingSale): void {
     sales.push(sale);
   }
 
-  LocalStorageManager.set(STORAGE_KEYS.PENDING_SALES, sales);
+  setLocalStorage(STORAGE_KEYS.PENDING_SALES, sales);
 }
 
 /**
@@ -48,14 +50,14 @@ export function getPendingSaleById(id: string): PendingSale | null {
 export function removePendingSale(id: string): void {
   const sales = getAllPendingSales();
   const filtered = sales.filter((s) => s.id !== id);
-  LocalStorageManager.set(STORAGE_KEYS.PENDING_SALES, filtered);
+  setLocalStorage(STORAGE_KEYS.PENDING_SALES, filtered);
 }
 
 /**
  * Remove todas as vendas pendentes
  */
 export function clearPendingSales(): void {
-  LocalStorageManager.remove(STORAGE_KEYS.PENDING_SALES);
+  removeLocalStorage(STORAGE_KEYS.PENDING_SALES);
 }
 
 /**

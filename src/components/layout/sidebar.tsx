@@ -29,32 +29,41 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, isMobile }) => {
     { icon: LogOut, label: "Sair", href: "#", badge: "6" },
   ];
 
-  const sidebarClasses = isMobile
-    ? `fixed inset-y-0 left-0 z-50 bg-gray-800 dark:bg-gray-900 text-white transition-transform duration-300 ease-in-out w-64 ${isOpen ? "translate-x-0" : "-translate-x-full"}`
-    : `fixed inset-y-0 left-0 bg-gray-800 dark:bg-gray-900 text-white transition-all duration-300 ease-in-out z-30 ${isOpen ? "w-64" : "w-16"}`;
-
   // Fechar sidebar ao clicar em um item no mobile
   const handleItemClick = () => {
-    if (isMobile) {
+    if (isMobile && isOpen) {
       onToggle();
     }
   };
 
+  // Se é mobile e não está aberto, não renderizar nada ou renderizar hidden
+  if (isMobile && !isOpen) {
+    return null; // Completamente oculto no mobile quando fechado
+  }
+
+  // Classes CSS mais explícitas
+  const sidebarClasses = isMobile
+    ? "fixed inset-y-0 left-0 z-50 bg-gray-800 dark:bg-gray-900 text-white w-64 h-full"
+    : `fixed inset-y-0 left-0 bg-gray-800 dark:bg-gray-900 text-white transition-all duration-300 ease-in-out z-30 h-full ${isOpen ? "w-64" : "w-16"}`;
+
   return (
     <>
       {isMobile && isOpen && (
-        <button
-          type="button"
-          className="bg-opacity-50 fixed inset-0 z-40 bg-black"
-          onClick={onToggle}
-          onKeyDown={(e) => {
-            if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
-              onToggle();
-            }
-          }}
-          aria-label="Fechar menu"
-          style={{ all: "unset", cursor: "pointer" }}
-        />
+        <>
+          {/* Overlay para fechar sidebar */}
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-black bg-opacity-50 cursor-pointer"
+            onClick={onToggle}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                onToggle();
+              }
+            }}
+            aria-label="Fechar menu"
+            style={{ border: "none", padding: 0, margin: 0 }}
+          />
+        </>
       )}
 
       <aside className={sidebarClasses}>

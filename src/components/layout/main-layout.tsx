@@ -67,6 +67,11 @@ export default function MainLayout({
     const checkScreenSize = () => {
       const mobile = window.innerWidth < 1024; // lg breakpoint
       setMobile(mobile);
+
+      // Se mudou para mobile e sidebar estava aberta, fecha ela
+      if (mobile && isSidebarOpen) {
+        toggleSidebar();
+      }
     };
 
     checkScreenSize();
@@ -74,7 +79,7 @@ export default function MainLayout({
     setInitialized(true);
 
     return () => window.removeEventListener("resize", checkScreenSize);
-  }, [setMobile, setInitialized]);
+  }, [setMobile, setInitialized, isSidebarOpen, toggleSidebar]);
 
   // ✅ Handlers simplificados (lógica no Zustand)
   const handleSearchCustomer = () => openModal("searchCustomer");
@@ -88,7 +93,8 @@ export default function MainLayout({
   const handleSelectCustomer = (customer: Customer) => setCustomer(customer);
 
   const handleSelectPaymentMethod = (method: string) => {
-    console.log(`Forma de pagamento selecionada: ${method}`);
+    // TODO: Implementar lógica de seleção de forma de pagamento
+    void method;
   };
 
   const handleApplyDiscount = (type: "percentage" | "fixed", value: number) => {
