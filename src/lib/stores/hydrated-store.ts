@@ -18,6 +18,10 @@ export const useHydratedPDVStore = () => {
   const store = usePDVStore();
 
   if (!isHydrated) {
+    // Durante SSR/hidratação, sempre começar com sidebar fechada
+    const isMobile =
+      typeof window !== "undefined" ? window.innerWidth < 1024 : true;
+
     return {
       ...store,
       cartItems: [],
@@ -31,8 +35,8 @@ export const useHydratedPDVStore = () => {
         budgets: false,
         pendingSales: false,
       },
-      isSidebarOpen: false,
-      isMobile: false,
+      isSidebarOpen: false, // Sempre fechada inicialmente
+      isMobile: isMobile,
       isInitialized: false,
       getSubtotal: () => 0,
       getDiscountAmount: () => 0,

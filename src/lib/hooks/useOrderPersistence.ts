@@ -2,7 +2,13 @@ import { useCallback } from "react";
 import type { Customer } from "@/data/mock-customers";
 import type { OrderItem } from "../types/order";
 import { ensureOrderItemsHaveImages } from "../utils/product-utils";
-import { LocalStorageManager, STORAGE_KEYS } from "../utils/storage";
+import {
+  getLocalStorage,
+  hasLocalStorage,
+  removeLocalStorage,
+  STORAGE_KEYS,
+  setLocalStorage,
+} from "../utils/storage";
 
 interface CartState {
   items: OrderItem[];
@@ -22,7 +28,7 @@ export function useOrderPersistence() {
    * Salva o estado atual do carrinho no LocalStorage
    */
   const saveCart = useCallback((state: CartState) => {
-    LocalStorageManager.set(STORAGE_KEYS.CART, state);
+    setLocalStorage(STORAGE_KEYS.CART, state);
   }, []);
 
   /**
@@ -35,7 +41,7 @@ export function useOrderPersistence() {
       discount: { type: null, value: 0 },
     };
 
-    const savedState = LocalStorageManager.get(STORAGE_KEYS.CART, defaultState);
+    const savedState = getLocalStorage(STORAGE_KEYS.CART, defaultState);
 
     // Garante que todos os items tenham imagem (compatibilidade com dados antigos)
     if (savedState && savedState.items.length > 0) {
@@ -49,14 +55,14 @@ export function useOrderPersistence() {
    * Limpa o carrinho do LocalStorage
    */
   const clearCart = useCallback(() => {
-    LocalStorageManager.remove(STORAGE_KEYS.CART);
+    removeLocalStorage(STORAGE_KEYS.CART);
   }, []);
 
   /**
    * Verifica se existe um carrinho salvo
    */
   const hasCart = useCallback((): boolean => {
-    return LocalStorageManager.has(STORAGE_KEYS.CART);
+    return hasLocalStorage(STORAGE_KEYS.CART);
   }, []);
 
   return { saveCart, loadCart, clearCart, hasCart };
